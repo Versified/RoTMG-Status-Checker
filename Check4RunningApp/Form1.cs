@@ -2,96 +2,112 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
+using System.Diagnostics;
 using System.Drawing;
+using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using System.Diagnostics;
-using System.Threading;
-using System.IO;
 
 namespace Check4RunningApp
 {
     public partial class Form1 : Form
     {
+        // This/These are the variables the form will use.
+        private readonly ServerManager manager;
+
+        // This is the constructor for the form.
         public Form1()
         {
             InitializeComponent();
+            manager = new ServerManager(this);
         }
-        private System.Windows.Forms.Timer m_Timer;
 
+        // This will change some values when the form loads.
         private void Form1_Load(object sender, EventArgs e)
         {
+            startButton.Enabled = true;
+            stopButton.Enabled = false;
 
-
-            RefreshProcesses();
-
-            m_Timer = new System.Windows.Forms.Timer();
-
-            m_Timer.Interval = 2000;
-            m_Timer.Tick += timer_Tick;
-            m_Timer.Start();
+            pauseCheckBox.Enabled = false;
         }
 
-        void timer_Tick(object sender, EventArgs e)
+        #region Button Click Handlers
+
+        private void startButton_Click(object sender, EventArgs e)
         {
-            RefreshProcesses();
+            startButton.Enabled = false;
+            stopButton.Enabled = true;
+
+            pauseCheckBox.Enabled = true;
+
+            manager.StartServer();
+            manager.StartwServer();
         }
 
-        private void RefreshProcesses()
+        private void stopButton_Click(object sender, EventArgs e)
         {
-            List<string> listbox = new List<string>();
-            
-            Process[] processes = Process.GetProcesses();
+            startButton.Enabled = true;
+            stopButton.Enabled = false;
 
-            foreach (var proc in processes)
-            {
-                if (!string.IsNullOrEmpty(proc.ProcessName))
-                    listbox.Add(proc.ProcessName);
-            }
-            listBox1.DataSource = listbox;
+            pauseCheckBox.Enabled = false;
 
-            if (listBox1.Items.Contains("server"))
-            {
-                serverLabel.Text = "Server Status: Running";
-            }
-            if (!listBox1.Items.Contains("server"))
-            {
-                Process.Start(Directory.GetCurrentDirectory() + "\\server.exe");
-                serverLabel.Text = "Server Status: Not Running";
-                // start process
-            }
-            if (listBox1.Items.Contains("wServer"))
-            {
-                wserverLabel.Text = "wServer Status: Running";
-            }
-            if (!listBox1.Items.Contains("wServer"))
-            {
-                Process.Start(Directory.GetCurrentDirectory() + "\\wServer.exe");
-                wserverLabel.Text = "wServer Status: Not Running";
-                // start process
-            }
+            OnwServerClose();
+            OnServerClose();
+            StopEverything();
         }
 
-        private void githubButton_Click(object sender, EventArgs e)
+        #endregion Button Click Handlers
+
+        #region Server Open and Close
+
+        public void OnServerOpen()
         {
-            Process.Start("www.github.com/R1S3MPGH");
+            serverLabel.Text = "Server.exe: Online";
+            serverLabel.ForeColor = Color.Green;
         }
 
-        private void helpButton_Click(object sender, EventArgs e)
+        public void OnServerClose()
         {
-            MessageBox.Show("This is a simple C# application that views a list box with running applications on your pc and detects if wServer or server is running.");
+            serverLabel.Text = "Server.exe: Offline";
+            serverLabel.ForeColor = Color.Red;
         }
 
-        private void button1_Click(object sender, EventArgs e)
+        public void OnwServerOpen()
         {
-            MessageBox.Show("You probably don't want this open when compiling your source, as you will get errors if server/wServer is open during the build.");
+            wserverLabel.Text = "wServer.exe: Online";
+            wserverLabel.ForeColor = Color.Green;
         }
 
-        private void button2_Click(object sender, EventArgs e)
+        public void OnwServerClose()
         {
-            MessageBox.Show("This is just a ListBox of running processes on your pc, which is how the application detects if wServer and/or server is running so the Status Labels will say if it is running or not.");
+            wserverLabel.Text = "wServer.exe: Offline";
+            wserverLabel.ForeColor = Color.Red;
+        }
+
+        #endregion Server Open and Close
+
+        // This will close both of the servers
+        private void StopEverything()
+        {
+            manager.StopServer();
+            manager.StopwServer();
+        }
+
+        // This is a boolean to check if the paused button is checked
+        public bool isPaused()
+        {
+            if (pauseCheckBox.Checked)
+                return true;
+            return false;
+        }
+
+        // This will append text to the debug box
+        public void AppendText(string text)
+        {
+            this.debugBox.AppendText(text + "\n");
         }
     }
 }
